@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils.timezone import now
 
 from rest_framework.response import Response
 from rest_framework.exceptions import MethodNotAllowed
@@ -12,20 +13,29 @@ def _get_idempotency(path, key):
 
 
 def _apply(path, key, request=None, response=None, help_data=None):
-    Idempotency.objects.create(path=path, key=key, request=request, response=response, help_data=help_data)
+    Idempotency.objects.create(
+        applied_at=now(),
+        path=path,
+        key=key,
+        request=request,
+        response=response,
+        help_data=help_data
+    )
 
 
 def _rollback(idempotency):
+    idempotency.rolled_back_at = now()
     idempotency.status = "rolled-back"
-    idempotency.save(update_fields=["status"])
+    idempotency.save(update_fields=["rolled_back_at", "status"])
 
 
 def _reapply(idempotency, request, response, help_data):
+    idempotency.applied_at = now()
     idempotency.status = "applied"
     idempotency.request = request
     idempotency.response = response
     idempotency.help_data = help_data
-    idempotency.save(update_fields=["status", "request", "response", "help_data"])
+    idempotency.save(update_fields=["applied_at", "status", "request", "response", "help_data"])
 
 
 def idempotency_required_view(view):

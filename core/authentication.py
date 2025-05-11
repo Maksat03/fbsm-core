@@ -57,6 +57,6 @@ class ServiceAuthentication(BaseAuthentication):
             return None
 
         if token != settings.SERVICE_API_KEY:
-            raise AuthenticationFailed("Invalid service token")
+            raise AuthenticationFailed("Неверный X-API-KEY")
 
         return AnonymousUser(), None

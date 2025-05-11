@@ -43,7 +43,7 @@ EXCEPTIONS = {
 
 
 def drf_exc_handler(exc, context):
-    user_id = getattr(context["request"].user, "user_id", None)
+    user_id = context["request"].user.get("user_id") if isinstance(context["request"].user, dict) else None
     logger.exception(f"[DRF Exc Handler] Ошибка: {exc} | User: {user_id}", exc_info=True)
 
     if response := exception_handler(exc, context):
@@ -56,7 +56,7 @@ def drf_exc_handler(exc, context):
 
 class DjExcHandlerMiddleware(MiddlewareMixin):
     def process_exception(self, request, exc):
-        user_id = getattr(request.user, "user_id", None)
+        user_id = request.user.get("user_id") if isinstance(request.user, dict) else None
         logger.exception(f"[DJ Exc Handler] Ошибка: {exc} | User: {user_id}", exc_info=True)
         return Response(EXCEPTIONS[500]["response"], status=500)
 
