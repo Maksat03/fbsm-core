@@ -5,16 +5,23 @@ from django.utils.deprecation import MiddlewareMixin
 
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, NotAuthenticated
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 
 logger = logging.getLogger(__name__)
 EXCEPTIONS = {
+    NotAuthenticated: {
+        "response": {
+            "detail": "Учетные данные не были предоставлены",
+            "code": "not_authenticated",
+        },
+        "status": 401
+    },
     TokenError: {
         "response": {
             "detail": "Неверный или истёкший токен",
-            "code": "token_error",
+            "code": "invalid_token",
         },
         "status": 401
     },
@@ -47,6 +54,11 @@ def drf_exc_handler(exc, context):
     logger.exception(f"[DRF Exc Handler] Ошибка: {exc} | User: {user_id}", exc_info=True)
 
     if response := exception_handler(exc, context):
+        exception = EXCEPTIONS.get(type(exc), None)
+
+        if exception:
+            return Response(exception["response"], status=exception["status"])
+
         response.data["code"] = response.data.get("code", getattr(exc, "default_code", response.status_code))
         return response
     else:
