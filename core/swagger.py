@@ -31,7 +31,9 @@ class SuccessResponseSerializer(serializers.Serializer):
 
 
 class BadRequestResponseSerializer(serializers.Serializer):
-    field_name = serializers.ListField(child=serializers.CharField(default="Текст ошибки"))
+    field_name1 = serializers.ListField(child=serializers.CharField(default="Текст ошибки payload input field 1"))
+    field_name2 = serializers.ListField(child=serializers.CharField(default="Текст ошибки payload input field 2"))
+    code = serializers.CharField(default="invalid")
 
 
 class SimpleExceptionResponseSerializer(serializers.Serializer):
