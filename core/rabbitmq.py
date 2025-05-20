@@ -91,8 +91,8 @@ class BaseRabbitMQ:
         if not cls.host or not cls.port or not cls.virtual_host or not cls.username or not cls.password:
             raise ValueError("Host, port, virtual_host, username, password обязательны")
 
-        if not cls.exchange or not cls.exchange_type or not cls.queue:
-            raise ValueError("Exchange, exchange type, queue обязательны")
+        if not cls.exchange or not cls.exchange_type:
+            raise ValueError("Exchange, exchange type обязательны")
 
         if cls.exchange_type == "fanout" and cls.publishing_routing_key:
             raise ValueError('Routing key должен быть пустым строкой "" если exchange type "fanout"')
@@ -113,52 +113,53 @@ class BaseRabbitMQ:
             durable=cls.durable
         )
 
-        if cls.dlq_exchange:
-            cls._channel.exchange_declare(cls.dlq_exchange, exchange_type='direct', durable=cls.durable)
-            cls._channel.queue_declare(cls.dlq_queue, durable=cls.durable)
-            cls._channel.queue_bind(exchange=cls.dlq_exchange, queue=cls.dlq_queue, routing_key=cls.dlq_routing_key)
+        if cls.queue and cls.consuming_routing_key:
+            if cls.dlq_exchange:
+                cls._channel.exchange_declare(cls.dlq_exchange, exchange_type='direct', durable=cls.durable)
+                cls._channel.queue_declare(cls.dlq_queue, durable=cls.durable)
+                cls._channel.queue_bind(exchange=cls.dlq_exchange, queue=cls.dlq_queue, routing_key=cls.dlq_routing_key)
 
-        if cls.retry_exchange:
-            cls._channel.exchange_declare(cls.retry_exchange, exchange_type='direct', durable=cls.durable)
+            if cls.retry_exchange:
+                cls._channel.exchange_declare(cls.retry_exchange, exchange_type='direct', durable=cls.durable)
+                cls._channel.queue_declare(
+                    cls.retry_queue,
+                    durable=cls.durable,
+                    arguments={
+                        'x-dead-letter-exchange': cls.exchange,
+                        'x-dead-letter-routing-key': cls.consuming_routing_key,
+                        'x-message-ttl': cls.retry_ttl,
+                    }
+                )
+                cls._channel.queue_bind(
+                    exchange=cls.retry_exchange,
+                    queue=cls.retry_queue,
+                    routing_key=cls.retry_routing_key
+                )
+
+            dlq_exchange = (
+                cls.retry_exchange if cls.retry_exchange
+                else cls.dlq_exchange if cls.dlq_exchange
+                else None
+            )
+            dlq_routing_key = (
+                cls.retry_routing_key if cls.retry_routing_key
+                else cls.dlq_routing_key if cls.dlq_routing_key
+                else None
+            )
+
             cls._channel.queue_declare(
-                cls.retry_queue,
+                queue=cls.queue,
                 durable=cls.durable,
                 arguments={
-                    'x-dead-letter-exchange': cls.exchange,
-                    'x-dead-letter-routing-key': cls.consuming_routing_key,
-                    'x-message-ttl': cls.retry_ttl,
-                }
+                    'x-dead-letter-exchange': dlq_exchange,
+                    'x-dead-letter-routing-key': dlq_routing_key
+                } if dlq_exchange else None
             )
             cls._channel.queue_bind(
-                exchange=cls.retry_exchange,
-                queue=cls.retry_queue,
-                routing_key=cls.retry_routing_key
+                exchange=cls.exchange,
+                queue=cls.queue,
+                routing_key=cls.consuming_routing_key
             )
-
-        dlq_exchange = (
-            cls.retry_exchange if cls.retry_exchange
-            else cls.dlq_exchange if cls.dlq_exchange
-            else None
-        )
-        dlq_routing_key = (
-            cls.retry_routing_key if cls.retry_routing_key
-            else cls.dlq_routing_key if cls.dlq_routing_key
-            else None
-        )
-
-        cls._channel.queue_declare(
-            queue=cls.queue,
-            durable=cls.durable,
-            arguments={
-                'x-dead-letter-exchange': dlq_exchange,
-                'x-dead-letter-routing-key': dlq_routing_key
-            } if dlq_exchange else None
-        )
-        cls._channel.queue_bind(
-            exchange=cls.exchange,
-            queue=cls.queue,
-            routing_key=cls.consuming_routing_key
-        )
 
         cls._topology_declared = True
 
@@ -231,6 +232,9 @@ class BaseRabbitMQ:
         retry_exchange = None if is_dlq else cls.retry_exchange
         dlq_exchange = None if is_dlq else cls.dlq_exchange
         requeue_on_fail = True if is_dlq else cls.requeue_on_fail
+
+        if not queue or not cls.consuming_routing_key:
+            raise ValueError("Queue и consuming routing key обязательны")
 
         def _dlq_publish(ch, method, body, properties):
             try:
