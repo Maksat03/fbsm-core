@@ -12,8 +12,8 @@ def get_idempotency(path, key):
     return Idempotency.objects.filter(path=path, key=key).first()
 
 
-def apply(path, key, request=None, response=None, help_data=None):
-    Idempotency.objects.create(
+def apply(path, key, request=None, response=None, help_data=None, commit=True):
+    idempotency = Idempotency(
         applied_at=now(),
         path=path,
         key=key,
@@ -21,6 +21,16 @@ def apply(path, key, request=None, response=None, help_data=None):
         response=response,
         help_data=help_data
     )
+
+    if commit:
+        idempotency.save()
+
+    return idempotency
+
+
+def get_not_applied_idempotency_keys(path, keys):
+    applied_keys = list(Idempotency.objects.filter(path=path, key__in=keys).values_list("key", flat=True))
+    return [key for key in keys if key not in applied_keys]
 
 
 def rollback(idempotency):
