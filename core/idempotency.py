@@ -8,11 +8,11 @@ from .models import Idempotency
 from .exceptions import ConflictException, PermissionDeniedException
 
 
-def _get_idempotency(path, key):
+def get_idempotency(path, key):
     return Idempotency.objects.filter(path=path, key=key).first()
 
 
-def _apply(path, key, request=None, response=None, help_data=None):
+def apply(path, key, request=None, response=None, help_data=None):
     Idempotency.objects.create(
         applied_at=now(),
         path=path,
@@ -23,13 +23,13 @@ def _apply(path, key, request=None, response=None, help_data=None):
     )
 
 
-def _rollback(idempotency):
+def rollback(idempotency):
     idempotency.rolled_back_at = now()
     idempotency.status = "rolled-back"
     idempotency.save(update_fields=["rolled_back_at", "status"])
 
 
-def _reapply(idempotency, request, response, help_data):
+def reapply(idempotency, request, response, help_data):
     idempotency.applied_at = now()
     idempotency.status = "applied"
     idempotency.request = request
@@ -47,12 +47,12 @@ def idempotency_required_view(view):
             raise MethodNotAllowed(method=request.method)
 
         with transaction.atomic():
-            idempotency = _get_idempotency(request.path, idempotency_key)
+            idempotency = get_idempotency(request.path, idempotency_key)
 
             if not idempotency:
                 if request.method == "POST":
                     response = view(request, *args, **kwargs)
-                    _apply(request.path, idempotency_key, request.data, response.data, getattr(request, "help_data", {}))
+                    apply(request.path, idempotency_key, request.data, response.data, getattr(request, "help_data", {}))
                     return response
                 else:
                     raise ConflictException("Idempotency never applied before", "never_applied_idempotency")
@@ -67,12 +67,12 @@ def idempotency_required_view(view):
                 request._full_data = idempotency.request
                 request.help_data = idempotency.help_data
                 view(request, *args, **kwargs)
-                _rollback(idempotency)
+                rollback(idempotency)
                 return Response(idempotency.response, status=200)
 
             else:  # rolled-back and POST
                 response = view(request, *args, **kwargs)
-                _reapply(idempotency, request.data, response.data, getattr(request, "help_data", {}))
+                reapply(idempotency, request.data, response.data, getattr(request, "help_data", {}))
                 return response
 
     return wrapper
@@ -80,11 +80,11 @@ def idempotency_required_view(view):
 
 def idempotency_required_mq_consumer(consumer):
     def wrapper(data, idempotency_path, idempotency_key):
-        idempotency = _get_idempotency(idempotency_path, idempotency_key)
+        idempotency = get_idempotency(idempotency_path, idempotency_key)
 
         if not idempotency:
             with transaction.atomic():
                 consumer(data)
-                _apply(idempotency_path, idempotency_key)
+                apply(idempotency_path, idempotency_key)
 
     return wrapper
