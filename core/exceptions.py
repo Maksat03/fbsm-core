@@ -13,28 +13,28 @@ logger = logging.getLogger(__name__)
 EXCEPTIONS = {
     NotAuthenticated: {
         "response": {
-            "detail": "Учетные данные не были предоставлены",
+            "detail": "Токен не предоставлен",
             "code": "not_authenticated",
         },
         "status": 401
     },
     AuthenticationFailed: {
         "response": {
-            "detail": "Учетные данные не были предоставлены",
-            "code": "not_authenticated",
+            "detail": "Неверные учетные данные",
+            "code": "authentication_failed",
         },
         "status": 401
     },
     TokenError: {
         "response": {
-            "detail": "Неверный или истёкший токен",
-            "code": "invalid_token",
+            "detail": "Ошибка токена",
+            "code": "token_error",
         },
         "status": 401
     },
     InvalidToken: {
         "response": {
-            "detail": "Неверный или истёкший токен",
+            "detail": "Недействительный токен",
             "code": "invalid_token",
         },
         "status": 401
