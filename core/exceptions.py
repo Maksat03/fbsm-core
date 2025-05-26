@@ -5,13 +5,20 @@ from django.utils.deprecation import MiddlewareMixin
 
 from rest_framework.views import exception_handler
 from rest_framework.response import Response
-from rest_framework.exceptions import APIException, NotAuthenticated
+from rest_framework.exceptions import APIException, NotAuthenticated, AuthenticationFailed
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 
 
 logger = logging.getLogger(__name__)
 EXCEPTIONS = {
     NotAuthenticated: {
+        "response": {
+            "detail": "Учетные данные не были предоставлены",
+            "code": "not_authenticated",
+        },
+        "status": 401
+    },
+    AuthenticationFailed: {
         "response": {
             "detail": "Учетные данные не были предоставлены",
             "code": "not_authenticated",
