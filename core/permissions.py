@@ -54,6 +54,14 @@ class IsConfirmedSeller(permissions.BasePermission):
         return _check_seller_confirmation(request.user["user_id"])
 
 
+class IsSuperAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if isinstance(request.user, AnonymousUser):
+            return False
+
+        return request.user["role"] == "super_admin"
+
+
 class IsMicroservice(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.headers.get("X-API-KEY")
