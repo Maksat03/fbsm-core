@@ -62,6 +62,22 @@ class IsSuperAdmin(permissions.BasePermission):
         return request.user["role"] == "super_admin"
 
 
+class IsAccountant(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if isinstance(request.user, AnonymousUser):
+            return False
+
+        return request.user["role"] == "accountant"
+
+
+class IsSupportManager(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if isinstance(request.user, AnonymousUser):
+            return False
+
+        return request.user["role"] == "support_manager"
+
+
 class IsMicroservice(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.headers.get("X-API-KEY")
