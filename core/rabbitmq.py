@@ -196,32 +196,44 @@ class BaseRabbitMQ:
         raise exc
 
     @classmethod
-    def publish(cls, idempotency_key, payload, saga_func=None, saga_args=None, raise_exception=True):
+    def _publish(cls, idempotency_key, payload):
         channel = cls._get_channel()
 
         if not channel:
-            exc = RuntimeError("Канал не доступен")
-            cls._safe_raise_exception("Не удалось соединиться", exc, saga_func, saga_args, raise_exception)
+            raise RuntimeError("Канал не доступен")
 
-        try:
-            channel.basic_publish(
-                exchange=cls.exchange,
-                routing_key=cls.publishing_routing_key,
-                body=json.dumps(payload),
-                properties=pika.BasicProperties(
-                    delivery_mode=pika.DeliveryMode.Persistent,
-                    content_type="application/json",
-                    headers={
-                        "Idempotency-Key": idempotency_key
-                    }
-                )
+        channel.basic_publish(
+            exchange=cls.exchange,
+            routing_key=cls.publishing_routing_key,
+            body=json.dumps(payload),
+            properties=pika.BasicProperties(
+                delivery_mode=pika.DeliveryMode.Persistent,
+                content_type="application/json",
+                headers={
+                    "Idempotency-Key": idempotency_key
+                }
             )
+        )
+
+    @classmethod
+    def publish(cls, idempotency_key, payload, saga_func=None, saga_args=None, raise_exception=True):
+        try:
+            try:
+                cls._publish(idempotency_key, payload)
+            except:
+                cls._publish(idempotency_key, payload)
 
         except (AMQPConnectionError, ChannelClosedByBroker) as exc:
             cls._connection = None
             cls._channel = None
 
             cls._safe_raise_exception("Соединение прервано", exc, saga_func, saga_args, raise_exception)
+
+        except RuntimeError as exc:
+            cls._connection = None
+            cls._channel = None
+
+            cls._safe_raise_exception("Не удалось соединиться", exc, saga_func, saga_args, raise_exception)
 
         except Exception as exc:
             cls._safe_raise_exception("Не удалось опубликовать сообщение", exc, saga_func, saga_args, raise_exception)
