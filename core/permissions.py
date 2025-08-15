@@ -1,18 +1,15 @@
 import requests
-
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-
 from rest_framework import permissions
+
 from core.safe_request import safe_request
 
 
 @safe_request()
-def _check_seller_confirmation(seller_account_id):
+def _check_seller_confirmation(seller_account_id: int) -> bool:
     url = f"{settings.USER_SERVICE_URL}v1/sellers/{seller_account_id}/is-activated/"
-    headers = {
-        "X-API-KEY": settings.USER_SERVICE_API_KEY
-    }
+    headers = {"X-API-KEY": settings.USER_SERVICE_API_KEY}
 
     response = requests.get(url, headers=headers, timeout=3)
     response.raise_for_status()

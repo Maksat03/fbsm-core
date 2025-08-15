@@ -1,25 +1,24 @@
 import logging
-import tenacity
+
 import pybreaker
-
-from tenacity import RetryError
+import tenacity
 from pybreaker import CircuitBreakerError
-from requests.exceptions import Timeout, ConnectionError, HTTPError
-
+from requests.exceptions import ConnectionError, HTTPError, Timeout
+from tenacity import RetryError
 
 logger = logging.getLogger(__name__)
 
 base_circuit_breaker = pybreaker.CircuitBreaker(
     fail_max=5 * 3,
     reset_timeout=90,
-    exclude=[lambda e: not isinstance(e, (Timeout, ConnectionError, MS5xxError))]
+    exclude=[lambda e: not isinstance(e, (Timeout, ConnectionError, MS5xxError))],
 )
 
 base_retry = tenacity.retry(
     retry=tenacity.retry_if_exception_type((Timeout, ConnectionError)),
     stop=tenacity.stop_after_attempt(3),
     wait=tenacity.wait_exponential(multiplier=0.5, min=0.5, max=5),
-    reraise=True
+    reraise=True,
 )
 
 
@@ -35,11 +34,11 @@ def _safe_raise_exception(exc, request_name, saga_func, saga_args, raise_excepti
         if 500 <= exc.response.status_code < 600:
             exc = MS5xxError(exc.response)
 
-    response = getattr(exc, 'response', None)
-    status_code = getattr(response, 'status_code', None)
-    text = getattr(response, 'text', None)
-    url = getattr(response, 'url', None)
-    method = getattr(getattr(response, 'request', None), 'method', None)
+    response = getattr(exc, "response", None)
+    status_code = getattr(response, "status_code", None)
+    text = getattr(response, "text", None)
+    url = getattr(response, "url", None)
+    method = getattr(getattr(response, "request", None), "method", None)
 
     logger.error(
         msg=(
@@ -54,14 +53,16 @@ def _safe_raise_exception(exc, request_name, saga_func, saga_args, raise_excepti
             f"\nResponse Text: {text}"
             "\n\n\n"
         ),
-        exc_info=True
+        exc_info=True,
     )
 
     if saga_func and saga_args:
         try:
             saga_func(*saga_args, exc=exc)
         except Exception as e:
-            logger.critical(f"[SAGA] Ошибка при выполнений {saga_func.__name__}: {e}", exc_info=True)
+            logger.critical(
+                f"[SAGA] Ошибка при выполнений {saga_func.__name__}: {e}", exc_info=True
+            )
             raise e
 
     if raise_exception:
@@ -80,7 +81,9 @@ def safe_request(retry=base_retry, circuit_breaker=base_circuit_breaker):
     """
 
     def decorator(request):
-        def wrapper(*args, saga_func=None, saga_args=None, raise_exception=True, **kwargs):
+        def wrapper(
+            *args, saga_func=None, saga_args=None, raise_exception=True, **kwargs
+        ):
             @circuit_breaker(name=request.__name__)
             def inner():
                 return request(*args, **kwargs)
@@ -88,8 +91,24 @@ def safe_request(retry=base_retry, circuit_breaker=base_circuit_breaker):
             try:
                 return retry(inner)()
             except RetryError as e:
-                _safe_raise_exception(e.last_attempt.exception(), request.__name__, saga_func, saga_args, raise_exception)
-            except (Timeout, ConnectionError, HTTPError, CircuitBreakerError, Exception) as e:
-                _safe_raise_exception(e, request.__name__, saga_func, saga_args, raise_exception)
+                _safe_raise_exception(
+                    e.last_attempt.exception(),
+                    request.__name__,
+                    saga_func,
+                    saga_args,
+                    raise_exception,
+                )
+            except (
+                Timeout,
+                ConnectionError,
+                HTTPError,
+                CircuitBreakerError,
+                Exception,
+            ) as e:
+                _safe_raise_exception(
+                    e, request.__name__, saga_func, saga_args, raise_exception
+                )
+
         return wrapper
+
     return decorator
