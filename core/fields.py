@@ -8,7 +8,7 @@ from core.consts import COUNTRY_CODES, PHONE_REGEX
 
 class PhoneNumberField(serializers.CharField):
     default_error_messages = {
-        "invalid": "Введите корректный номер телефона.",
+        "invalid_format": "Введите корректный номер телефона.",
         "invalid_country_code": "Данный регион не поддерживается.",
     }
 
