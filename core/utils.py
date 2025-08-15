@@ -57,7 +57,7 @@ def save_objects_changes(
     model.objects.bulk_create(creates)
 
 
-def validate_cdn_link(url):
+def validate_cdn_link(url: str):
     if settings.CDN_LINK not in url:
         raise ValidationError("Нужна ссылка на CDN.")
 
