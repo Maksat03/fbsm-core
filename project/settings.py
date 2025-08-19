@@ -179,6 +179,8 @@ SPECTACULAR_SETTINGS = {
     "TAGS": [],
 }
 
+
+# fmt: off
 SERVICE_API_KEY = "some-secret"
 
 USER_SERVICE_API_KEY = "some-secret"
