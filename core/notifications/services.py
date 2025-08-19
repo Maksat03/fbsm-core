@@ -22,7 +22,7 @@ def send(
         "level": notification.level.value,
         "account_id": account_id,
         "push": push,
-        "metadata": asdict(notification),
+        "extra_meta": asdict(notification),
     }
     if not idempotency_key:
         idempotency_key = str(uuid4())
