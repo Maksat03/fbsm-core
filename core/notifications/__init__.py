@@ -1,1 +1,1 @@
-from .services import send  # noqa: F401
+from core.notifications.services import send  # noqa: F401
