@@ -2,6 +2,7 @@ import json
 import logging
 import time
 from typing import Any, Callable
+from uuid import UUID
 
 import pika
 from pika.channel import Channel
@@ -244,42 +245,61 @@ class BaseRabbitMQ:
     @classmethod
     def publish(
         cls,
-        idempotency_key: str,
+        idempotency_key: str | UUID,
         payload: dict[str, Any],
-        saga_func: Callable | None = None,
-        saga_args: tuple | None = None,
+        saga_func: Callable,
+        saga_args: tuple,
         raise_exception: bool = True,
-    ):
-        try:
+    ) -> None:
+        if isinstance(idempotency_key, UUID):
+            idempotency_key = str(idempotency_key)
+
+        MAX_RETRIES = 3
+        RETRY_DELAY = 0.5  # сек задержки между попытками
+
+        for attempt in range(1, MAX_RETRIES + 1):
             try:
                 cls._publish(idempotency_key, payload)
-            except Exception:
-                cls._publish(idempotency_key, payload)
+                break  # успех -> выходим из цикла
+            except (AMQPConnectionError, ChannelClosedByBroker) as exc:
+                cls._connection = None
+                cls._channel = None
 
-        except (AMQPConnectionError, ChannelClosedByBroker) as exc:
-            cls._connection = None
-            cls._channel = None
+                if attempt == MAX_RETRIES:
+                    cls._safe_raise_exception(
+                        "Соединение прервано",
+                        exc,
+                        saga_func,
+                        saga_args,
+                        raise_exception,
+                    )
+                else:
+                    time.sleep(RETRY_DELAY)
+            except RuntimeError as exc:
+                cls._connection = None
+                cls._channel = None
 
-            cls._safe_raise_exception(
-                "Соединение прервано", exc, saga_func, saga_args, raise_exception
-            )
-
-        except RuntimeError as exc:
-            cls._connection = None
-            cls._channel = None
-
-            cls._safe_raise_exception(
-                "Не удалось соединиться", exc, saga_func, saga_args, raise_exception
-            )
-
-        except Exception as exc:
-            cls._safe_raise_exception(
-                "Не удалось опубликовать сообщение",
-                exc,
-                saga_func,
-                saga_args,
-                raise_exception,
-            )
+                if attempt == MAX_RETRIES:
+                    cls._safe_raise_exception(
+                        "Не удалось соединиться",
+                        exc,
+                        saga_func,
+                        saga_args,
+                        raise_exception,
+                    )
+                else:
+                    time.sleep(RETRY_DELAY)
+            except Exception as exc:
+                if attempt == MAX_RETRIES:
+                    cls._safe_raise_exception(
+                        "Не удалось опубликовать сообщение",
+                        exc,
+                        saga_func,
+                        saga_args,
+                        raise_exception,
+                    )
+                else:
+                    time.sleep(RETRY_DELAY)
 
     @classmethod
     def consume(cls, callback: Callable, is_dlq: bool = False):
