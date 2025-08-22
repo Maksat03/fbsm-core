@@ -247,8 +247,8 @@ class BaseRabbitMQ:
         cls,
         idempotency_key: str | UUID,
         payload: dict[str, Any],
-        saga_func: Callable,
-        saga_args: tuple,
+        saga_func: Callable | None = None,
+        saga_args: tuple | None = None,
         raise_exception: bool = True,
     ) -> None:
         if isinstance(idempotency_key, UUID):
