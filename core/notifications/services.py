@@ -17,15 +17,18 @@ def send(
             "Нужно передать наследника от `core.notifications.base.Notification`"
         )
 
+    extra_meta: list[dict[str, str]] = [
+        {"name": k, "value": str(v)} for k, v in asdict(notification).items()
+    ]
     payload = {
         "type": notification.type,
         "level": notification.level.value,
         "account_id": account_id,
         "push": push,
-        "extra_meta": asdict(notification),
+        "extra_meta": extra_meta,
     }
     if not idempotency_key:
-        idempotency_key = str(uuid4())
+        idempotency_key = uuid4()
 
     NotificationSendMQ.publish(
         idempotency_key, payload=payload, raise_exception=raise_exception
