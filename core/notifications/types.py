@@ -105,6 +105,8 @@ class ClientReturnRequestRejectedV1(Notification):
 
     code: str
     order_id: int
+    product_name: str
+    product_id: int
 
 
 @dataclass
