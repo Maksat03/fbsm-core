@@ -225,15 +225,22 @@ class BaseRabbitMQ:
         raise exc
 
     @classmethod
-    def _publish(cls, idempotency_key, payload):
+    def _publish(
+        cls,
+        idempotency_key: str,
+        payload: dict[str, Any],
+        routing_key: str | None = None,
+    ):
         channel = cls._get_channel()
-
         if not channel:
             raise RuntimeError("Канал не доступен")
 
+        if not routing_key:
+            routing_key = cls.publishing_routing_key
+
         channel.basic_publish(
             exchange=cls.exchange,
-            routing_key=cls.publishing_routing_key,
+            routing_key=routing_key,
             body=json.dumps(payload),
             properties=pika.BasicProperties(
                 delivery_mode=pika.DeliveryMode.Persistent,
@@ -247,6 +254,7 @@ class BaseRabbitMQ:
         cls,
         idempotency_key: str | UUID,
         payload: dict[str, Any],
+        routing_key: str | None = None,
         saga_func: Callable | None = None,
         saga_args: tuple | None = None,
         raise_exception: bool = True,
@@ -259,7 +267,7 @@ class BaseRabbitMQ:
 
         for attempt in range(1, MAX_RETRIES + 1):
             try:
-                cls._publish(idempotency_key, payload)
+                cls._publish(idempotency_key, payload, routing_key)
                 break  # успех -> выходим из цикла
             except (AMQPConnectionError, ChannelClosedByBroker) as exc:
                 cls._connection = None
