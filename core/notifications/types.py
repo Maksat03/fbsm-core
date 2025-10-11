@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from core.notifications.base import Notification, NotificationLevel
 
 
-@dataclass
+@dataclass(slots=True)
 class RegistrationRequestAcceptedV1(Notification):
     type = "registration_request.accepted.v1"
     level = NotificationLevel.SUCCESS
 
 
-@dataclass
+@dataclass(slots=True)
 class RegistrationRequestRejectedV1(Notification):
     type = "registration_request.rejected.v1"
     level = NotificationLevel.WARNING
@@ -17,7 +17,7 @@ class RegistrationRequestRejectedV1(Notification):
     reject_reason: str
 
 
-@dataclass
+@dataclass(slots=True)
 class ProductWarnedV1(Notification):
     type = "product.warned.v1"
     level = NotificationLevel.WARNING
@@ -29,7 +29,7 @@ class ProductWarnedV1(Notification):
     complaint_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class ProductBlockedV1(Notification):
     type = "product.blocked.v1"
     level = NotificationLevel.DANGER
@@ -41,7 +41,7 @@ class ProductBlockedV1(Notification):
     complaint_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class SellerWarnedV1(Notification):
     type = "seller.warned.v1"
     level = NotificationLevel.WARNING
@@ -50,7 +50,7 @@ class SellerWarnedV1(Notification):
     complaint_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class SellerBlockedV1(Notification):
     type = "seller.blocked.v1"
     level = NotificationLevel.DANGER
@@ -59,7 +59,7 @@ class SellerBlockedV1(Notification):
     complaint_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class SlotPurchaseSuccessV1(Notification):
     type = "slot_purchase.success.v1"
     level = NotificationLevel.SUCCESS
@@ -68,7 +68,7 @@ class SlotPurchaseSuccessV1(Notification):
     slot_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class SlotPurchaseFailV1(Notification):
     type = "slot_purchase.fail.v1"
     level = NotificationLevel.DANGER
@@ -77,7 +77,7 @@ class SlotPurchaseFailV1(Notification):
     slot_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class TopUpSuccessV1(Notification):
     type = "top_up.success.v1"
     level = NotificationLevel.SUCCESS
@@ -87,7 +87,7 @@ class TopUpSuccessV1(Notification):
     balance: int
 
 
-@dataclass
+@dataclass(slots=True)
 class ClientReturnRequestAcceptedV1(Notification):
     type = "client.return_request.accepted.v1"
     level = NotificationLevel.SUCCESS
@@ -98,7 +98,7 @@ class ClientReturnRequestAcceptedV1(Notification):
     product_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class ClientReturnRequestRejectedV1(Notification):
     type = "client.return_request.rejected.v1"
     level = NotificationLevel.DANGER
@@ -109,7 +109,7 @@ class ClientReturnRequestRejectedV1(Notification):
     product_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class SellerReturnRequestAcceptedV1(Notification):
     type = "seller.return_request.accepted.v1"
     level = NotificationLevel.INFO
@@ -121,7 +121,7 @@ class SellerReturnRequestAcceptedV1(Notification):
     product_id: int
 
 
-@dataclass
+@dataclass(slots=True)
 class WithdrawalRequestPaidV1(Notification):
     type = "withdrawal_request.paid.v1"
     level = NotificationLevel.SUCCESS
@@ -130,7 +130,7 @@ class WithdrawalRequestPaidV1(Notification):
     currency: str
 
 
-@dataclass
+@dataclass(slots=True)
 class WithdrawalRequestRejectedV1(Notification):
     type = "withdrawal_request.rejected.v1"
     level = NotificationLevel.DANGER
