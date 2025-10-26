@@ -122,9 +122,9 @@ class SellerReturnRequestAcceptedV1(Notification):
 
 
 @dataclass(slots=True)
-class ClientSlotReturnRequestRejectedV1(Notification):
-    type = "client.slot_return_request.rejected.v1"
-    level = NotificationLevel.DANGER
+class ClientSlotReturnRequestAcceptedV1(Notification):
+    type = "client.slot_return_request.accepted.v1"
+    level = NotificationLevel.SUCCESS
 
     code: str
     order_id: int
