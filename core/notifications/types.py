@@ -137,3 +137,9 @@ class WithdrawalRequestRejectedV1(Notification):
 
     amount: int
     currency: str
+
+
+@dataclass(slots=True)
+class OrderItemDeliveredV1(Notification):
+    type = "item.delivered.v1"
+    level = NotificationLevel.SUCCESS
