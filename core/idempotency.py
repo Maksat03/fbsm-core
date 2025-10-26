@@ -121,8 +121,8 @@ def idempotency_required_mq_consumer(consumer: Callable):
                 consumer(data)
                 apply(idempotency_path, idempotency_key)
 
-            alias = DEFAULT_DB_ALIAS
-            connection = connections[alias]
-            connection.close_if_unusable_or_obsolete()
+        alias = DEFAULT_DB_ALIAS
+        connection = connections[alias]
+        connection.close_if_unusable_or_obsolete()
 
     return wrapper
