@@ -122,6 +122,30 @@ class SellerReturnRequestAcceptedV1(Notification):
 
 
 @dataclass(slots=True)
+class ClientSlotReturnRequestRejectedV1(Notification):
+    type = "client.slot_return_request.rejected.v1"
+    level = NotificationLevel.DANGER
+
+    code: str
+    order_id: int
+    slot_index: int
+    slot_id: int
+
+
+@dataclass(slots=True)
+class SellerSlotReturnRequestAcceptedV1(Notification):
+    type = "seller.slot_return_request.accepted.v1"
+    level = NotificationLevel.INFO
+
+    code: str
+    order_id: int
+    slot_index: int
+    slot_id: int
+    broadcast_id: int
+    broadcast_name: str
+
+
+@dataclass(slots=True)
 class WithdrawalRequestPaidV1(Notification):
     type = "withdrawal_request.paid.v1"
     level = NotificationLevel.SUCCESS
@@ -143,3 +167,13 @@ class WithdrawalRequestRejectedV1(Notification):
 class OrderItemDeliveredV1(Notification):
     type = "item.delivered.v1"
     level = NotificationLevel.SUCCESS
+
+
+@dataclass(slots=True)
+class BroadcastStartedV1(Notification):
+    type = "broadcast.started.v1"
+    level = NotificationLevel.INFO
+
+    account_id: int
+    short_name: str
+    nickname: str
