@@ -1,6 +1,6 @@
 from typing import Callable
 
-from django.db import transaction
+from django.db import DEFAULT_DB_ALIAS, connections, transaction
 from django.utils.timezone import now
 from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
@@ -120,5 +120,9 @@ def idempotency_required_mq_consumer(consumer: Callable):
             with transaction.atomic():
                 consumer(data)
                 apply(idempotency_path, idempotency_key)
+
+            alias = DEFAULT_DB_ALIAS
+            connection = connections[alias]
+            connection.close_if_unusable_or_obsolete()
 
     return wrapper
