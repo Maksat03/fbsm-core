@@ -42,8 +42,6 @@ def send_many(
     idempotency_key: str | None = None,
     raise_exception: bool = True,
 ):
-    raise NotImplementedError()
-
     if not isinstance(notification, Notification) or not is_dataclass(notification):
         raise TypeError(
             "Нужно передать наследника от `core.notifications.base.Notification`"
@@ -61,3 +59,7 @@ def send_many(
     }
     if not idempotency_key:
         idempotency_key = uuid4()
+
+    NotificationSendMQ.publish(
+        idempotency_key, payload=payload, raise_exception=raise_exception
+    )
