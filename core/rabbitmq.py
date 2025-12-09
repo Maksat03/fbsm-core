@@ -84,7 +84,7 @@ class BaseRabbitMQ:
 
             cls._declare_topology() if not cls._topology_declared else None
         except Exception as exc:
-            logger.critical(f"[RabbitMQ] Не удалось соединиться: {exc}", exc_info=True)
+            logger.critical("[RabbitMQ] Не удалось соединиться: %s", exc, exc_info=True)
             cls._connection = None
             cls._channel = None
 
@@ -207,14 +207,16 @@ class BaseRabbitMQ:
 
     @classmethod
     def _safe_raise_exception(cls, msg, exc, saga_func, saga_args, raise_exception):
-        logger.critical(f"[RabbitMQ] {msg}: {exc}", exc_info=True)
+        logger.critical("[RabbitMQ] %s: %s", msg, exc, exc_info=True)
 
         if saga_func and saga_args:
             try:
                 saga_func(*saga_args, exc=exc)
             except Exception as e:
                 logger.critical(
-                    f"[SAGA] Ошибка при выполнений {saga_func.__name__}: {e}",
+                    "[SAGA] Ошибка при выполнений %s: %s",
+                    saga_func.__name__,
+                    e,
                     exc_info=True,
                 )
                 raise e
@@ -335,23 +337,28 @@ class BaseRabbitMQ:
 
             except Exception as e:
                 logger.critical(
-                    f"[RabbitMQ] Не удалось опубликовать в DLQ: {e}", exc_info=True
+                    "[RabbitMQ] Не удалось опубликовать в DLQ: %s", e, exc_info=True
                 )
                 ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
         def _callback(ch: Channel, method, properties, body):
             try:
                 data = json.loads(body)
+                idempotency_key = properties.headers.get("Idempotency-Key")
                 callback(
                     data,
                     idempotency_path=cls.queue,
-                    idempotency_key=properties.headers.get("Idempotency-Key"),
+                    idempotency_key=idempotency_key,
                 )
                 ch.basic_ack(delivery_tag=method.delivery_tag)
+                logger.info(
+                    "[RabbitMQ] Сообщение %s успешно обработано", idempotency_key
+                )
 
             except Exception as e:
                 logger.critical(
-                    f"[RabbitMQ] Неизвестная ошибка при обработка сообщений: {e}",
+                    "[RabbitMQ] Неизвестная ошибка при обработка сообщений: %s",
+                    e,
                     exc_info=True,
                 )
 
@@ -398,19 +405,21 @@ class BaseRabbitMQ:
                 channel.start_consuming()
 
             except KeyboardInterrupt:
-                logger.info("[RabbitMQ] Обработка сообщении остановлена")
+                logger.info("[RabbitMQ] Обработка сообщений остановлена")
                 break
 
             except (AMQPConnectionError, ChannelClosedByBroker, RuntimeError) as exc:
                 logger.critical(
-                    f"[RabbitMQ] Не удалось соединиться: {exc}. Retrying...",
+                    "[RabbitMQ] Не удалось соединиться: %s. Retrying...",
+                    exc,
                     exc_info=True,
                 )
                 time.sleep(cls.consuming_retry_after)
 
             except Exception as exc:
                 logger.critical(
-                    f"[RabbitMQ] Consumer остановился из-за ошибки: {exc}",
+                    "[RabbitMQ] Consumer остановился из-за ошибки: %s",
+                    exc,
                     exc_info=True,
                 )
                 time.sleep(cls.consuming_retry_after)
