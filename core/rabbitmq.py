@@ -5,6 +5,7 @@ from typing import Any, Callable
 from uuid import UUID
 
 import pika
+from django.db import connection
 from pika.channel import Channel
 from pika.exceptions import AMQPConnectionError, ChannelClosedByBroker
 
@@ -343,6 +344,11 @@ class BaseRabbitMQ:
 
         def _callback(ch: Channel, method, properties, body):
             try:
+                # Так как используется pgbouncer,
+                # то нужно каждый раз возвращать
+                # соединение в пул
+                connection.close()
+
                 data = json.loads(body)
                 idempotency_key = properties.headers.get("Idempotency-Key")
                 callback(
