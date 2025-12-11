@@ -177,3 +177,23 @@ class BroadcastStartedV1(Notification):
     account_id: int
     short_name: str
     nickname: str
+
+
+@dataclass(slots=True)
+class SellerOrderProductNewV1(Notification):
+    type = "seller.order.product.new.v1"
+    level = NotificationLevel.SUCCESS
+
+    product_name: str
+    product_id: int
+    sku_id: int
+
+
+@dataclass(slots=True)
+class SellerOrderSlotNewV1(Notification):
+    type = "seller.order.slot.new.v1"
+    level = NotificationLevel.SUCCESS
+
+    slot_id: int
+    slot_sku_id: int
+    slot_index: int
