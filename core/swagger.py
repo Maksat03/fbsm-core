@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Iterable
 
 from drf_spectacular.utils import (
     OpenApiExample,
@@ -54,8 +54,11 @@ class SimpleExceptionResponseSerializer(serializers.Serializer):
 
 
 class SimpleExceptionResponses:
-    def __init__(self, exceptions: Sequence[APIException]):
-        self.exceptions = exceptions
+    def __init__(self, *exceptions: APIException | Iterable[APIException]):
+        if len(exceptions) == 1 and isinstance(exceptions[0], (list, tuple)):
+            self.exceptions = tuple(exceptions[0])
+        else:
+            self.exceptions = tuple(exceptions)
 
     @property
     def schema(self):
