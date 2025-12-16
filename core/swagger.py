@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from drf_spectacular.utils import (
     OpenApiExample,
     OpenApiParameter,
@@ -52,24 +54,30 @@ class SimpleExceptionResponseSerializer(serializers.Serializer):
 
 
 class SimpleExceptionResponses:
-    def __init__(self, exceptions: list[APIException]):
+    def __init__(self, exceptions: Sequence[APIException]):
         self.exceptions = exceptions
 
     @property
     def schema(self):
-        return OpenApiResponse(
-            response=SimpleExceptionResponseSerializer,
-            examples=[
+        exception_examples: list[OpenApiExample] = []
+        for exception in self.exceptions:
+            default_extra = getattr(exception, "default_extra", None)
+            value = {
+                "detail": exception.default_detail,
+                "code": exception.default_code,
+            }
+            if default_extra:
+                value["extra"] = default_extra
+            exception_examples.append(
                 OpenApiExample(
                     name=exception.default_detail,
                     response_only=True,
-                    value={
-                        "detail": exception.default_detail,
-                        "code": exception.default_code,
-                    },
+                    value=value,
                 )
-                for exception in self.exceptions
-            ],
+            )
+        return OpenApiResponse(
+            response=SimpleExceptionResponseSerializer,
+            examples=exception_examples,
         )
 
 
