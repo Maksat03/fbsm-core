@@ -75,7 +75,9 @@ def drf_exc_handler(exc, context):
             return Response(exception["response"], status=exception["status"])
 
         if not isinstance(response.data, dict):
-            raise ValueError("В исключениях можно использовать только dict")
+            return Response(
+                {"backend_error": "В исключениях можно использовать только dict"}
+            )
 
         response.data["code"] = response.data.get(
             "code", getattr(exc, "default_code", response.status_code)
