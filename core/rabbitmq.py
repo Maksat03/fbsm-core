@@ -344,11 +344,6 @@ class BaseRabbitMQ:
 
         def _callback(ch: Channel, method, properties, body):
             try:
-                # Так как используется pgbouncer,
-                # то нужно каждый раз возвращать
-                # соединение в пул
-                connection.close()
-
                 data = json.loads(body)
                 idempotency_key = properties.headers.get("Idempotency-Key")
                 callback(
@@ -360,7 +355,6 @@ class BaseRabbitMQ:
                 logger.info(
                     "[RabbitMQ] Сообщение %s успешно обработано", idempotency_key
                 )
-
             except Exception as e:
                 logger.critical(
                     "[RabbitMQ] Неизвестная ошибка при обработка сообщений: %s",
@@ -392,6 +386,9 @@ class BaseRabbitMQ:
                     ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
                 else:
                     ch.basic_ack(delivery_tag=method.delivery_tag)
+            finally:
+                # Возвращем соединение в пул pgbouncer
+                connection.close()
 
         while True:
             try:
