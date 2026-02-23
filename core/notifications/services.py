@@ -27,11 +27,11 @@ def send(
         "push": push,
         "extra_meta": extra_meta,
     }
-    if not idempotency_key:
-        idempotency_key = uuid4()
 
     NotificationSendMQ.publish(
-        idempotency_key, payload=payload, raise_exception=raise_exception
+        idempotency_key or uuid4(),
+        payload=payload,
+        raise_exception=raise_exception,
     )
 
 
